@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.core.version import APP_NAME, VERSION
 from app.routers.auth import router as auth_router
 from app.routers.customers import router as customer_router
 from app.routers.invoices import router as invoice_router
@@ -9,8 +10,10 @@ from app.routers.mpesa import router as mpesa_router
 from app.routers.daraja import router as daraja_router
 
 app = FastAPI(
-    title="Clyde Bridge",
-    version="1.0.0",
+    title=APP_NAME,
+    version=VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # Authentication
@@ -26,22 +29,22 @@ app.include_router(webhook_router)
 
 # M-Pesa
 app.include_router(mpesa_router)
-
-# Daraja
 app.include_router(daraja_router)
 
 
-@app.get("/")
+@app.get("/", tags=["System"])
 def root():
     return {
-        "application": "Clyde Bridge",
-        "version": "1.0.0",
+        "application": APP_NAME,
+        "version": VERSION,
         "status": "running",
     }
 
 
-@app.get("/health")
+@app.get("/health", tags=["System"])
 def health():
     return {
         "status": "healthy",
+        "application": APP_NAME,
+        "version": VERSION,
     }
