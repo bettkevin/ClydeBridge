@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from app.core.logger import logger
 from app.database.db import SessionLocal
 from app.models.oauth_token import OAuthToken
+from app.services.oauth_service import OAuthService
 
 
 class TokenService:
@@ -61,6 +62,7 @@ class TokenService:
                 "OAuth token saved successfully"
             )
 
+            db.expunge(token)
             return token
 
         finally:
@@ -76,13 +78,52 @@ class TokenService:
 
         try:
 
-            return (
+            token = (
                 db.query(OAuthToken)
                 .filter(
                     OAuthToken.company_id == company_id
                 )
                 .first()
             )
+
+            if not token:
+                return None
+
+            if (
+                token.expires_at
+                and token.expires_at <= datetime.utcnow()
+            ):
+
+                logger.info(
+                    "QuickBooks access token expired. Refreshing..."
+                )
+
+                refreshed = OAuthService.refresh_access_token(
+                    token.refresh_token
+                )
+
+                token.access_token = refreshed["access_token"]
+                token.refresh_token = refreshed["refresh_token"]
+
+                token.expires_at = (
+                    datetime.utcnow()
+                    + timedelta(
+                        seconds=refreshed.get(
+                            "expires_in",
+                            3600,
+                        )
+                    )
+                )
+
+                db.commit()
+                db.refresh(token)
+
+                logger.info(
+                    "QuickBooks token refreshed successfully."
+                )
+
+            db.expunge(token)
+            return token
 
         finally:
 
@@ -93,7 +134,8 @@ class TokenService:
         company_id: int,
         access_token: str,
         refresh_token: str,
-    ):
+        expires_at: datetime | None,
+    ) -> OAuthToken:
 
         db: Session = SessionLocal()
 
@@ -114,12 +156,17 @@ class TokenService:
 
             token.access_token = access_token
             token.refresh_token = refresh_token
+            token.expires_at = expires_at
 
             db.commit()
+            db.refresh(token)
 
             logger.info(
                 "OAuth tokens refreshed successfully"
             )
+
+            db.expunge(token)
+            return token
 
         finally:
 

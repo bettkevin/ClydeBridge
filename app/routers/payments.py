@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.core.logger import logger
 from app.schemas.payment import PaymentRequest
@@ -34,7 +34,4 @@ def create_payment(
             "Payment creation failed"
         )
 
-        return {
-            "status": "error",
-            "message": str(e),
-        }
+        raise HTTPException(status_code=500, detail=str(e))

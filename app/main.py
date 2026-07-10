@@ -1,6 +1,9 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.core.version import APP_NAME, VERSION
+from app.database.db import Base, engine
 
 # Routers
 from app.routers.auth import router as auth_router
@@ -12,11 +15,23 @@ from app.routers.mpesa import router as mpesa_router
 from app.routers.daraja import router as daraja_router
 from app.routers.portal import router as portal_router
 
+# Import models so metadata is populated before create_all
+from app.models import company, oauth_token  # noqa: F401
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup if they don't exist
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
 app = FastAPI(
     title=APP_NAME,
     version=VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Authentication
@@ -44,7 +59,7 @@ async def root():
         "application": APP_NAME,
         "version": VERSION,
         "status": "running",
-        "environment": "production",
+        "environment": "development",
     }
 
 
@@ -63,3 +78,24 @@ async def version():
         "application": APP_NAME,
         "version": VERSION,
     }
+
+
+@app.get("/routes", tags=["System"])
+async def routes():
+    from fastapi.routing import APIRoute
+
+    def collect(router):
+        result = []
+        for r in router.routes:
+            if isinstance(r, APIRoute):
+                result.append({
+                    "path": r.path,
+                    "methods": sorted(list(r.methods)),
+                    "name": r.name,
+                })
+            orig = getattr(r, "original_router", None)
+            if orig:
+                result.extend(collect(orig))
+        return result
+
+    return sorted(collect(app.router), key=lambda r: r["path"])

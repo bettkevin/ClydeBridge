@@ -58,6 +58,10 @@ class Settings:
         "MPESA_SHORTCODE"
     )
 
+    MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
+
+    MPESA_CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL")
+
     MPESA_CONFIRMATION_URL = os.getenv(
         "MPESA_CONFIRMATION_URL"
     )

@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 
-@router.post("/confirmation")
+@router.post("/confirmation/{realm_id}")
 def confirmation(
     realm_id: str,
     callback: MpesaCallbackRequest,
@@ -20,10 +20,17 @@ def confirmation(
         f"M-Pesa callback received: {callback.TransID}"
     )
 
-    return MpesaCallbackService.process(
-        realm_id=realm_id,
-        callback=callback,
-    )
+    try:
+        return MpesaCallbackService.process(
+            realm_id=realm_id,
+            callback=callback,
+        )
+    except Exception as e:
+        logger.exception("M-Pesa confirmation processing failed")
+        return {
+            "ResultCode": 1,
+            "ResultDesc": str(e),
+        }
 
 
 @router.post("/validation")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.core.logger import logger
 from app.services.invoice_service import InvoiceService
@@ -28,10 +28,7 @@ def get_invoices(realm_id: str):
             "Unable to retrieve invoices"
         )
 
-        return {
-            "status": "error",
-            "message": str(e),
-        }
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{realm_id}/{invoice_number}")
@@ -48,12 +45,15 @@ def get_invoice(
         )
 
         if not invoice:
-            return {
-                "status": "error",
-                "message": "Invoice not found.",
-            }
+            raise HTTPException(
+                status_code=404,
+                detail="Invoice not found.",
+            )
 
         return invoice
+
+    except HTTPException:
+        raise
 
     except Exception as e:
 
@@ -61,7 +61,4 @@ def get_invoice(
             "Unable to retrieve invoice"
         )
 
-        return {
-            "status": "error",
-            "message": str(e),
-        }
+        raise HTTPException(status_code=500, detail=str(e))

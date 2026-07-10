@@ -57,7 +57,7 @@ class QuickBooksClient:
         headers = {
             "Authorization": f"Bearer {token.access_token}",
             "Accept": "application/json",
-            "Content-Type": "application/text",
+            "Content-Type": "text/plain",
         }
 
         try:

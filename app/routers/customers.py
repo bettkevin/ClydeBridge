@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.core.logger import logger
 from app.services.customer_service import CustomerService
@@ -33,7 +33,4 @@ def get_customers(realm_id: str):
             "Unable to retrieve customers"
         )
 
-        return {
-            "status": "error",
-            "message": str(e),
-        }
+        raise HTTPException(status_code=500, detail=str(e))

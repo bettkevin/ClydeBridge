@@ -12,11 +12,14 @@ class CompanyService:
         db: Session = SessionLocal()
 
         try:
-            return (
+            company = (
                 db.query(Company)
                 .filter(Company.realm_id == realm_id)
                 .first()
             )
+            if company:
+                db.expunge(company)
+            return company
 
         finally:
             db.close()
@@ -64,6 +67,7 @@ class CompanyService:
 
             logger.info("Company saved successfully")
 
+            db.expunge(company)
             return company
 
         finally:

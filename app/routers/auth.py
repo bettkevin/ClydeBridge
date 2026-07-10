@@ -1,7 +1,7 @@
 import urllib.parse
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 
 from app.core.config import settings
@@ -49,10 +49,14 @@ def callback(
 
     try:
 
-        logger.info("Starting OAuth callback")
+        logger.info("========== STARTING OAUTH CALLBACK ==========")
 
         # Exchange authorization code
         tokens = OAuthService.exchange_code(code)
+
+        logger.info("========== TOKENS RECEIVED ==========")
+        logger.info(tokens)
+        logger.info("=====================================")
 
         access_token = tokens["access_token"]
 
@@ -62,24 +66,38 @@ def callback(
             realm_id=realmId,
         )
 
+        logger.info("Company information retrieved successfully")
+
         # Save Company
         company = CompanyService.create_company(
             company_info=company_info,
             realm_id=realmId,
         )
 
-        # Calculate token expiry
+        logger.info(
+            f"Company ID: {company.id} | Realm ID: {company.realm_id}"
+        )
+
+        # Calculate expiry
         expires_at = datetime.utcnow() + timedelta(
             seconds=tokens.get("expires_in", 3600)
         )
 
-        # Save OAuth Tokens
-        TokenService.save_token(
+        logger.info(f"Calculated expires_at: {expires_at}")
+
+        # Save Tokens
+        token = TokenService.save_token(
             company_id=company.id,
             access_token=tokens["access_token"],
             refresh_token=tokens["refresh_token"],
             expires_at=expires_at,
         )
+
+        logger.info("========== TOKEN SAVED ==========")
+        logger.info(f"Database ID      : {token.id}")
+        logger.info(f"Company ID       : {token.company_id}")
+        logger.info(f"Expires At       : {token.expires_at}")
+        logger.info("=================================")
 
         logger.info("QuickBooks connection saved successfully")
 
@@ -99,7 +117,4 @@ def callback(
 
         logger.exception("QuickBooks connection failed")
 
-        return {
-            "status": "error",
-            "message": str(e),
-        }
+        raise HTTPException(status_code=500, detail=str(e))
