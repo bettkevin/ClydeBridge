@@ -21,10 +21,14 @@ async def payment_page(
     invoice_number: str,
 ):
 
-    invoice = InvoiceService.find_invoice_by_number(
-        realm_id,
-        invoice_number,
-    )
+    try:
+        invoice = InvoiceService.find_invoice_by_number(
+            realm_id,
+            invoice_number,
+        )
+    except Exception as e:
+        logger.exception("Failed to load invoice for payment page")
+        raise HTTPException(status_code=404, detail=str(e))
 
     if not invoice:
         raise HTTPException(
