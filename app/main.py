@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -59,7 +60,7 @@ async def root():
         "application": APP_NAME,
         "version": VERSION,
         "status": "running",
-        "environment": "development",
+        "environment": os.getenv("ENVIRONMENT", "production"),
     }
 
 
