@@ -18,6 +18,7 @@ from app.routers.portal import router as portal_router
 
 # Import models so metadata is populated before create_all
 from app.models import company, oauth_token  # noqa: F401
+from app.models.payment_session import PaymentSession  # noqa: F401
 
 
 @asynccontextmanager
